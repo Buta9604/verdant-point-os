@@ -1,10 +1,9 @@
-import { useState } from "react";
-import { ShoppingBag } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { ProductCard } from "@/components/ProductCard";
 import { CartDrawer } from "@/components/CartDrawer";
 import { ProductSearch } from "@/components/ProductSearch";
+import { POSHeader } from "@/components/POSHeader";
 import { useToast } from "@/hooks/use-toast";
 
 // Sample product data
@@ -95,11 +94,20 @@ interface CartItem {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [cartOpen, setCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const { toast } = useToast();
+
+  // Check if user is logged in
+  useEffect(() => {
+    const userData = localStorage.getItem("pos_user");
+    if (!userData) {
+      navigate("/login");
+    }
+  }, [navigate]);
 
   const filteredProducts = SAMPLE_PRODUCTS.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -157,48 +165,27 @@ const Index = () => {
   };
 
   const handleCheckout = () => {
-    toast({
-      title: "Checkout",
-      description: "Proceeding to payment...",
-    });
-    // Checkout flow will be implemented later
+    if (cartItems.length === 0) {
+      toast({
+        title: "Cart is empty",
+        description: "Add items to cart before checkout",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setCartOpen(false);
+    navigate("/checkout", { state: { items: cartItems } });
   };
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border/50 shadow-sm">
-        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center text-white font-display font-bold text-lg">
-              G
-            </div>
-            <div>
-              <h1 className="font-display text-xl font-bold leading-none">
-                Green Point POS
-              </h1>
-              <p className="text-xs text-muted-foreground">Premium Cannabis Retail</p>
-            </div>
-          </div>
-
-          <Button
-            size="lg"
-            variant="outline"
-            className="relative h-12 px-6 rounded-full border-primary/20 hover:bg-primary/5"
-            onClick={() => setCartOpen(true)}
-          >
-            <ShoppingBag className="h-5 w-5 mr-2" />
-            Cart
-            {totalItems > 0 && (
-              <Badge className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center p-0 rounded-full">
-                {totalItems}
-              </Badge>
-            )}
-          </Button>
-        </div>
-      </header>
+      <POSHeader 
+        cartItemCount={totalItems}
+        onOpenCart={() => setCartOpen(true)}
+      />
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8 space-y-8">
