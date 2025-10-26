@@ -8,82 +8,85 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Premium Cannabis POS - Cream & Sage Design System */
-    --background: 30 25% 97%;  /* Cream base #FBF7F2 */
-    --foreground: 220 20% 15%;  /* Deep charcoal #1C2330 */
-
-    --card: 0 0% 100%;  /* Pure white cards */
-    --card-foreground: 220 20% 15%;
-
+    /* Premium Cream & Sage Design System - Light Mode */
+    --background: 40 33% 97%; /* #F8F6F1 ivory cream */
+    --foreground: 220 20% 20%; /* #2A3142 charcoal */
+    
+    --card: 0 0% 100%; /* #FFFFFF */
+    --card-foreground: 220 20% 20%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 15%;
-
-    /* Sage green for primary actions */
-    --primary: 145 28% 55%;  /* Sage green #6BAF7A */
+    --popover-foreground: 220 20% 20%;
+    
+    --primary: 145 28% 56%; /* #6BAF7A sage green */
     --primary-foreground: 0 0% 100%;
-
-    /* Soft green highlights */
-    --secondary: 150 18% 82%;  /* Light sage #C7D8CF */
-    --secondary-foreground: 220 20% 15%;
-
-    --muted: 30 20% 92%;  /* Warm cream muted */
-    --muted-foreground: 220 12% 45%;
-
-    --accent: 145 28% 55%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 70% 60%;
+    
+    --secondary: 145 20% 82%; /* #C7D8CF light sage */
+    --secondary-foreground: 220 20% 20%;
+    
+    --muted: 40 25% 95%; /* #F5F3EE soft cream */
+    --muted-foreground: 220 15% 50%;
+    
+    --accent: 145 25% 70%; /* #A8C9B3 */
+    --accent-foreground: 220 20% 20%;
+    
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-
-    --border: 30 15% 88%;  /* Soft cream borders */
-    --input: 30 15% 88%;
-    --ring: 145 28% 55%;
-
-    --radius: 0.75rem;  /* Softer corners */
-
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(145 28% 55%), hsl(145 35% 65%));
-    --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%), hsl(30 25% 98%));
     
-    /* Shadows */
-    --shadow-soft: 0 2px 8px -2px hsl(220 20% 15% / 0.08);
-    --shadow-elevated: 0 8px 24px -4px hsl(220 20% 15% / 0.12);
-    --shadow-floating: 0 16px 48px -8px hsl(220 20% 15% / 0.16);
+    --border: 40 20% 90%; /* #EAEAE5 */
+    --input: 40 20% 88%;
+    --ring: 145 28% 56%;
     
-    /* Transitions */
-    --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --radius: 0.875rem;
+    
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 20% 20%;
+    --sidebar-primary: 145 28% 56%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 145 20% 82%;
+    --sidebar-accent-foreground: 220 20% 20%;
+    --sidebar-border: 40 20% 90%;
+    --sidebar-ring: 145 28% 56%;
   }
-
+  
   .dark {
-    --background: 220 20% 12%;
-    --foreground: 30 25% 97%;
-
-    --card: 220 18% 16%;
-    --card-foreground: 30 25% 97%;
-
-    --popover: 220 18% 16%;
-    --popover-foreground: 30 25% 97%;
-
-    --primary: 145 28% 55%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 150 12% 25%;
-    --secondary-foreground: 30 25% 97%;
-
-    --muted: 220 15% 20%;
-    --muted-foreground: 220 10% 65%;
-
-    --accent: 145 28% 55%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 70% 50%;
+    /* Dark Mode - Deep Charcoal Base */
+    --background: 220 25% 12%; /* #181D28 deep gray */
+    --foreground: 40 20% 95%; /* #F3F1ED cream text */
+    
+    --card: 220 22% 15%; /* #1E2430 */
+    --card-foreground: 40 20% 95%;
+    
+    --popover: 220 22% 15%;
+    --popover-foreground: 40 20% 95%;
+    
+    --primary: 145 35% 60%; /* #6DBF7F brighter sage for dark */
+    --primary-foreground: 220 25% 12%;
+    
+    --secondary: 145 15% 25%; /* #2F3D34 dark sage */
+    --secondary-foreground: 40 20% 95%;
+    
+    --muted: 220 20% 18%; /* #22283A */
+    --muted-foreground: 40 15% 70%;
+    
+    --accent: 145 25% 35%; /* #3D5F49 */
+    --accent-foreground: 40 20% 95%;
+    
+    --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
-
-    --border: 220 15% 22%;
-    --input: 220 15% 22%;
-    --ring: 145 28% 55%;
+    
+    --border: 220 20% 22%; /* #2A3142 */
+    --input: 220 20% 20%;
+    --ring: 145 35% 60%;
+    
+    --sidebar-background: 220 22% 15%;
+    --sidebar-foreground: 40 20% 95%;
+    --sidebar-primary: 145 35% 60%;
+    --sidebar-primary-foreground: 220 25% 12%;
+    --sidebar-accent: 145 15% 25%;
+    --sidebar-accent-foreground: 40 20% 95%;
+    --sidebar-border: 220 20% 22%;
+    --sidebar-ring: 145 35% 60%;
   }
 }
 
