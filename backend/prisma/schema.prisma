@@ -1,0 +1,457 @@
+// Prisma Schema for Verdant Point Cannabis POS System
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// User Management & Authentication
+// ============================================
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  BUDTENDER
+  INVENTORY_CLERK
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  pinHash      String?   @map("pin_hash")
+  role         UserRole
+  firstName    String    @map("first_name")
+  lastName     String    @map("last_name")
+  phone        String?
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLogin    DateTime? @map("last_login")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  transactions    Transaction[]
+  shifts          Shift[]
+  complianceLogs  ComplianceLog[]
+  notifications   Notification[]
+  settingsUpdated Setting[]
+  analyticsSummary AnalyticsSummary[] @relation("TopEmployee")
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+  @@map("users")
+}
+
+// ============================================
+// Customer Management
+// ============================================
+
+enum PreferredContact {
+  EMAIL
+  PHONE
+  NONE
+}
+
+model Customer {
+  id                  String            @id @default(uuid())
+  email               String?           @unique
+  firstName           String            @map("first_name")
+  lastName            String            @map("last_name")
+  phone               String?
+  dateOfBirth         DateTime          @map("date_of_birth") @db.Date
+  medicalCardNumber   String?           @map("medical_card_number")
+  medicalCardExpiry   DateTime?         @map("medical_card_expiry") @db.Date
+  medicalCardState    String?           @map("medical_card_state") @db.VarChar(2)
+  loyaltyPoints       Int               @default(0) @map("loyalty_points")
+  totalSpent          Decimal           @default(0) @map("total_spent") @db.Decimal(10, 2)
+  visitCount          Int               @default(0) @map("visit_count")
+  preferredContact    PreferredContact? @map("preferred_contact")
+  notes               String?           @db.Text
+  isActive            Boolean           @default(true) @map("is_active")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  transactions Transaction[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([medicalCardNumber])
+  @@map("customers")
+}
+
+// ============================================
+// Product Catalog
+// ============================================
+
+model Category {
+  id           String    @id @default(uuid())
+  name         String    @unique
+  description  String?   @db.Text
+  taxRate      Decimal   @map("tax_rate") @db.Decimal(5, 2)
+  displayOrder Int       @default(0) @map("display_order")
+  icon         String?
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  products Product[]
+
+  @@index([name])
+  @@index([isActive])
+  @@map("categories")
+}
+
+model Supplier {
+  id            String    @id @default(uuid())
+  name          String    @unique
+  contactName   String?   @map("contact_name")
+  email         String?
+  phone         String?
+  address       String?   @db.Text
+  licenseNumber String?   @unique @map("license_number")
+  isActive      Boolean   @default(true) @map("is_active")
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  products Product[]
+
+  @@index([name])
+  @@index([licenseNumber])
+  @@map("suppliers")
+}
+
+enum StrainType {
+  INDICA
+  SATIVA
+  HYBRID
+  CBD
+  NA
+}
+
+model Product {
+  id             String      @id @default(uuid())
+  sku            String      @unique
+  name           String
+  categoryId     String      @map("category_id")
+  supplierId     String?     @map("supplier_id")
+  strainType     StrainType? @map("strain_type")
+  thcPercentage  Decimal?    @map("thc_percentage") @db.Decimal(5, 2)
+  cbdPercentage  Decimal?    @map("cbd_percentage") @db.Decimal(5, 2)
+  batchId        String?     @map("batch_id")
+  metrcId        String?     @map("metrc_id")
+  price          Decimal     @db.Decimal(10, 2)
+  cost           Decimal?    @db.Decimal(10, 2)
+  weightGrams    Decimal?    @map("weight_grams") @db.Decimal(10, 2)
+  description    String?     @db.Text
+  imageUrl       String?     @map("image_url")
+  isActive       Boolean     @default(true) @map("is_active")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  category          Category           @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  supplier          Supplier?          @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  inventory         Inventory?
+  transactionItems  TransactionItem[]
+  analyticsSummary  AnalyticsSummary[] @relation("TopProduct")
+
+  @@index([sku])
+  @@index([categoryId])
+  @@index([batchId])
+  @@index([metrcId])
+  @@index([isActive])
+  @@map("products")
+}
+
+// ============================================
+// Inventory Management
+// ============================================
+
+model Inventory {
+  id              String    @id @default(uuid())
+  productId       String    @unique @map("product_id")
+  quantity        Int       @default(0)
+  reorderLevel    Int       @default(10) @map("reorder_level")
+  reorderQuantity Int       @default(50) @map("reorder_quantity")
+  lastRestockDate DateTime? @map("last_restock_date") @db.Date
+  expiryDate      DateTime? @map("expiry_date") @db.Date
+  location        String?
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([quantity])
+  @@index([expiryDate])
+  @@map("inventory")
+}
+
+// ============================================
+// Sales & Transactions
+// ============================================
+
+enum PaymentMethod {
+  CASH
+  DEBIT
+  CREDIT
+}
+
+enum PaymentStatus {
+  COMPLETED
+  REFUNDED
+  VOID
+}
+
+model Transaction {
+  id                String         @id @default(uuid())
+  transactionNumber String         @unique @map("transaction_number")
+  customerId        String?        @map("customer_id")
+  userId            String?        @map("user_id")
+  subtotal          Decimal        @db.Decimal(10, 2)
+  taxAmount         Decimal        @map("tax_amount") @db.Decimal(10, 2)
+  discountAmount    Decimal        @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  total             Decimal        @db.Decimal(10, 2)
+  paymentMethod     PaymentMethod  @map("payment_method")
+  paymentStatus     PaymentStatus  @default(COMPLETED) @map("payment_status")
+  registerId        String?        @map("register_id")
+  notes             String?        @db.Text
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  customer Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  user     User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items    TransactionItem[]
+
+  @@index([customerId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([transactionNumber])
+  @@map("transactions")
+}
+
+model TransactionItem {
+  id            String      @id @default(uuid())
+  transactionId String      @map("transaction_id")
+  productId     String      @map("product_id")
+  quantity      Int
+  unitPrice     Decimal     @map("unit_price") @db.Decimal(10, 2)
+  discount      Decimal     @default(0) @db.Decimal(10, 2)
+  total         Decimal     @db.Decimal(10, 2)
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([transactionId])
+  @@index([productId])
+  @@map("transaction_items")
+}
+
+// ============================================
+// Employee Shifts
+// ============================================
+
+model Shift {
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  clockIn          DateTime  @map("clock_in")
+  clockOut         DateTime? @map("clock_out")
+  totalHours       Decimal?  @map("total_hours") @db.Decimal(5, 2)
+  totalSales       Decimal   @default(0) @map("total_sales") @db.Decimal(10, 2)
+  transactionCount Int       @default(0) @map("transaction_count")
+  registerId       String?   @map("register_id")
+  notes            String?   @db.Text
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([clockIn])
+  @@map("shifts")
+}
+
+// ============================================
+// Compliance & Audit Trail
+// ============================================
+
+enum ComplianceEventType {
+  SALE
+  RETURN
+  TRANSFER
+  DISPOSAL
+  INVENTORY_ADJUSTMENT
+  METRC_SYNC
+}
+
+model ComplianceLog {
+  id           String               @id @default(uuid())
+  eventType    ComplianceEventType  @map("event_type")
+  userId       String?              @map("user_id")
+  entityType   String?              @map("entity_type")
+  entityId     String?              @map("entity_id")
+  metrcBatchId String?              @map("metrc_batch_id")
+  action       String
+  beforeState  Json?                @map("before_state")
+  afterState   Json?                @map("after_state")
+  ipAddress    String?              @map("ip_address")
+  createdAt    DateTime             @default(now()) @map("created_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([eventType])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([metrcBatchId])
+  @@map("compliance_logs")
+}
+
+// ============================================
+// Analytics
+// ============================================
+
+model AnalyticsSummary {
+  id              String    @id @default(uuid())
+  date            DateTime  @unique @db.Date
+  totalSales      Decimal   @default(0) @map("total_sales") @db.Decimal(10, 2)
+  totalRevenue    Decimal   @default(0) @map("total_revenue") @db.Decimal(10, 2)
+  totalCost       Decimal   @default(0) @map("total_cost") @db.Decimal(10, 2)
+  grossProfit     Decimal   @default(0) @map("gross_profit") @db.Decimal(10, 2)
+  transactionCount Int      @default(0) @map("transaction_count")
+  avgBasketSize   Decimal   @default(0) @map("avg_basket_size") @db.Decimal(10, 2)
+  topProductId    String?   @map("top_product_id")
+  topEmployeeId   String?   @map("top_employee_id")
+  uniqueCustomers Int       @default(0) @map("unique_customers")
+  newCustomers    Int       @default(0) @map("new_customers")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  topProduct  Product? @relation("TopProduct", fields: [topProductId], references: [id], onDelete: SetNull)
+  topEmployee User?    @relation("TopEmployee", fields: [topEmployeeId], references: [id], onDelete: SetNull)
+
+  @@index([date])
+  @@map("analytics_summary")
+}
+
+// ============================================
+// Settings & Configuration
+// ============================================
+
+enum SettingCategory {
+  TAX
+  STORE
+  NOTIFICATION
+  INTEGRATION
+  SYSTEM
+}
+
+model Setting {
+  id          String           @id @default(uuid())
+  key         String           @unique
+  value       String           @db.Text
+  category    SettingCategory?
+  isEncrypted Boolean          @default(false) @map("is_encrypted")
+  description String?          @db.Text
+  updatedBy   String?          @map("updated_by")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  updatedByUser User? @relation(fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  @@index([key])
+  @@index([category])
+  @@map("settings")
+}
+
+// ============================================
+// Notifications
+// ============================================
+
+enum NotificationType {
+  LOW_STOCK
+  COMPLIANCE
+  SYSTEM
+  SHIFT
+  SALES
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+model Notification {
+  id        String               @id @default(uuid())
+  userId    String               @map("user_id")
+  type      NotificationType
+  title     String
+  message   String               @db.Text
+  priority  NotificationPriority @default(NORMAL)
+  isRead    Boolean              @default(false) @map("is_read")
+  actionUrl String?              @map("action_url")
+  metadata  Json?
+  createdAt DateTime             @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ============================================
+// Background Jobs
+// ============================================
+
+enum JobType {
+  ANALYTICS
+  COMPLIANCE_SYNC
+  BACKUP
+  REPORT
+  EMAIL
+  CLEANUP
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model BackgroundJob {
+  id          String    @id @default(uuid())
+  name        String
+  type        JobType
+  status      JobStatus @default(PENDING)
+  data        Json?
+  result      Json?
+  error       String?   @db.Text
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@map("background_jobs")
+}
