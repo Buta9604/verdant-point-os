@@ -5,84 +5,8 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { ProductSearch } from "@/components/ProductSearch";
 import { POSHeader } from "@/components/POSHeader";
 import { useToast } from "@/hooks/use-toast";
-
-// Sample product data
-const SAMPLE_PRODUCTS = [
-  {
-    id: "1",
-    name: "Northern Lights",
-    category: "Indica",
-    thc: 18.5,
-    cbd: 0.2,
-    price: 45.00,
-    stock: 24,
-  },
-  {
-    id: "2",
-    name: "Sour Diesel",
-    category: "Sativa",
-    thc: 22.0,
-    cbd: 0.1,
-    price: 52.00,
-    stock: 15,
-  },
-  {
-    id: "3",
-    name: "Blue Dream",
-    category: "Hybrid",
-    thc: 20.5,
-    cbd: 0.3,
-    price: 48.00,
-    stock: 8,
-  },
-  {
-    id: "4",
-    name: "OG Kush",
-    category: "Hybrid",
-    thc: 24.0,
-    cbd: 0.2,
-    price: 55.00,
-    stock: 32,
-  },
-  {
-    id: "5",
-    name: "Girl Scout Cookies",
-    category: "Hybrid",
-    thc: 21.5,
-    cbd: 0.1,
-    price: 50.00,
-    stock: 0,
-  },
-  {
-    id: "6",
-    name: "Jack Herer",
-    category: "Sativa",
-    thc: 19.0,
-    cbd: 0.4,
-    price: 46.00,
-    stock: 19,
-  },
-  {
-    id: "7",
-    name: "Granddaddy Purple",
-    category: "Indica",
-    thc: 23.5,
-    cbd: 0.1,
-    price: 54.00,
-    stock: 12,
-  },
-  {
-    id: "8",
-    name: "Pineapple Express",
-    category: "Hybrid",
-    thc: 20.0,
-    cbd: 0.2,
-    price: 47.00,
-    stock: 27,
-  },
-];
-
-const CATEGORIES = ["Indica", "Sativa", "Hybrid", "CBD", "Pre-Rolls", "Edibles"];
+import { useProducts } from "@/hooks/useProducts";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface CartItem {
   id: string;
@@ -100,24 +24,42 @@ const Index = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { data: products, isLoading } = useProducts();
 
-  // Check if user is logged in
-  useEffect(() => {
-    const userData = localStorage.getItem("pos_user");
-    if (!userData) {
-      navigate("/login");
-    }
-  }, [navigate]);
+  // Extract unique categories from products
+  const categories = products 
+    ? Array.from(new Set(products.map(p => p.category?.name).filter(Boolean)))
+    : [];
 
-  const filteredProducts = SAMPLE_PRODUCTS.filter((product) => {
+  const mappedProducts = products?.map(p => ({
+    id: p.id,
+    name: p.name,
+    category: p.category?.name || "Uncategorized",
+    thc: Number(p.thc_percentage) || 0,
+    cbd: Number(p.cbd_percentage) || 0,
+    price: Number(p.price),
+    stock: p.inventory?.[0]?.quantity || 0,
+  })) || [];
+
+  const filteredProducts = mappedProducts.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
   const handleAddToCart = (productId: string) => {
-    const product = SAMPLE_PRODUCTS.find((p) => p.id === productId);
+    const product = mappedProducts.find((p) => p.id === productId);
     if (!product) return;
+
+    if (product.stock === 0) {
+      toast({
+        title: "Out of stock",
+        description: "This product is currently unavailable",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setCartItems((prev) => {
       const existing = prev.find((item) => item.id === productId);
@@ -195,8 +137,14 @@ const Index = () => {
           onSearchChange={setSearchQuery}
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
-          categories={CATEGORIES}
+          categories={categories}
         />
+
+        {isLoading && (
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        )}
 
         {/* Results Header */}
         <div className="flex items-center justify-between">
@@ -209,7 +157,7 @@ const Index = () => {
         </div>
 
         {/* Product Grid */}
-        {filteredProducts.length > 0 ? (
+        {!isLoading && filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
               <ProductCard

@@ -1,6 +1,8 @@
 import { StatsCard } from "@/components/StatsCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useDashboardStats, useTopProducts, useRecentTransactions } from "@/hooks/useAnalytics";
+import { useLowStockItems } from "@/hooks/useInventory";
 import {
   DollarSign,
   ShoppingCart,
@@ -8,8 +10,6 @@ import {
   Package,
   AlertTriangle,
   Users,
-  ArrowUpRight,
-  ArrowDownRight,
 } from "lucide-react";
 import {
   Table,
@@ -20,29 +20,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-
-const topProducts = [
-  { name: "Northern Lights", category: "Indica", sales: 142, revenue: "$6,390", stock: 24 },
-  { name: "Blue Dream", category: "Hybrid", sales: 128, revenue: "$6,144", stock: 8 },
-  { name: "OG Kush", category: "Hybrid", sales: 115, revenue: "$6,325", stock: 32 },
-  { name: "Sour Diesel", category: "Sativa", sales: 98, revenue: "$5,096", stock: 15 },
-  { name: "Jack Herer", category: "Sativa", sales: 87, revenue: "$4,002", stock: 19 },
-];
-
-const recentTransactions = [
-  { id: "TXN-1234", customer: "John D.", items: 3, total: "$156.00", time: "2m ago", status: "completed" },
-  { id: "TXN-1233", customer: "Sarah M.", items: 2, total: "$98.50", time: "12m ago", status: "completed" },
-  { id: "TXN-1232", customer: "Mike R.", items: 5, total: "$287.00", time: "28m ago", status: "completed" },
-  { id: "TXN-1231", customer: "Emma L.", items: 1, total: "$52.00", time: "45m ago", status: "completed" },
-];
-
-const lowStockItems = [
-  { name: "Blue Dream", stock: 8, threshold: 15, category: "Hybrid" },
-  { name: "Girl Scout Cookies", stock: 0, threshold: 10, category: "Hybrid" },
-  { name: "Granddaddy Purple", stock: 12, threshold: 20, category: "Indica" },
-];
+import { formatDistance } from "date-fns";
 
 export default function Dashboard() {
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: topProducts, isLoading: productsLoading } = useTopProducts(5);
+  const { data: recentTransactions, isLoading: transactionsLoading } = useRecentTransactions(10);
+  const { data: lowStockItems, isLoading: lowStockLoading } = useLowStockItems();
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -68,32 +52,32 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatsCard
             title="Today's Revenue"
-            value="$12,845"
-            change="+12.5% from yesterday"
+            value={statsLoading ? "..." : `$${stats?.totalRevenue.toFixed(2) || '0.00'}`}
+            change="Live data"
             changeType="positive"
             icon={DollarSign}
             iconColor="text-primary"
           />
           <StatsCard
             title="Total Transactions"
-            value="247"
-            change="+8.2% from yesterday"
+            value={statsLoading ? "..." : String(stats?.transactionCount || 0)}
+            change="Today"
             changeType="positive"
             icon={ShoppingCart}
             iconColor="text-blue-600"
           />
           <StatsCard
             title="Avg Transaction"
-            value="$52.01"
-            change="-3.1% from yesterday"
-            changeType="negative"
+            value={statsLoading ? "..." : `$${stats?.avgTransaction.toFixed(2) || '0.00'}`}
+            change="Today"
+            changeType="positive"
             icon={TrendingUp}
             iconColor="text-purple-600"
           />
           <StatsCard
             title="Active Customers"
-            value="1,428"
-            change="+5.4% this week"
+            value={statsLoading ? "..." : String(stats?.uniqueCustomers || 0)}
+            change="Today"
             changeType="positive"
             icon={Users}
             iconColor="text-orange-600"
@@ -122,23 +106,33 @@ export default function Dashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {topProducts.map((product) => (
-                    <TableRow key={product.name}>
-                      <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {product.category}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">{product.sales}</TableCell>
-                      <TableCell className="text-right font-semibold">{product.revenue}</TableCell>
-                      <TableCell className="text-right">
-                        <span className={product.stock < 10 ? "text-destructive font-medium" : ""}>
-                          {product.stock}
-                        </span>
+                  {productsLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : topProducts && topProducts.length > 0 ? (
+                    topProducts.map((product: any, idx: number) => (
+                      <TableRow key={idx}>
+                        <TableCell className="font-medium">{product.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {product.category}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">{product.sales}</TableCell>
+                        <TableCell className="text-right font-semibold">${product.revenue.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">-</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        No data available
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -153,26 +147,34 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {lowStockItems.map((item) => (
-                <div
-                  key={item.name}
-                  className="p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="font-medium text-sm">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">{item.category}</p>
-                    </div>
-                    <Package className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Stock: {item.stock}</span>
-                    <span className={item.stock === 0 ? "text-destructive font-medium" : "text-orange-600"}>
-                      {item.stock === 0 ? "Out of Stock" : "Low"}
-                    </span>
-                  </div>
+              {lowStockLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
-              ))}
+              ) : lowStockItems && lowStockItems.length > 0 ? (
+                lowStockItems.slice(0, 5).map((item: any) => (
+                  <div
+                    key={item.id}
+                    className="p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-medium text-sm">{item.product?.name}</p>
+                        <p className="text-xs text-muted-foreground">{item.product?.category?.name}</p>
+                      </div>
+                      <Package className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Stock: {item.quantity}</span>
+                      <span className={item.quantity === 0 ? "text-destructive font-medium" : "text-orange-600"}>
+                        {item.quantity === 0 ? "Out of Stock" : "Low"}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center py-8 text-muted-foreground">No low stock items</p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -195,20 +197,36 @@ export default function Dashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentTransactions.map((txn) => (
-                  <TableRow key={txn.id}>
-                    <TableCell className="font-mono text-sm">{txn.id}</TableCell>
-                    <TableCell>{txn.customer}</TableCell>
-                    <TableCell className="text-right">{txn.items}</TableCell>
-                    <TableCell className="text-right font-semibold">{txn.total}</TableCell>
-                    <TableCell className="text-right text-muted-foreground text-sm">{txn.time}</TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant="secondary" className="text-xs capitalize">
-                        {txn.status}
-                      </Badge>
+                {transactionsLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : recentTransactions && recentTransactions.length > 0 ? (
+                  recentTransactions.map((txn: any) => (
+                    <TableRow key={txn.id}>
+                      <TableCell className="font-mono text-sm">{txn.transaction_number}</TableCell>
+                      <TableCell>{txn.customer ? `${txn.customer.first_name} ${txn.customer.last_name}` : 'Guest'}</TableCell>
+                      <TableCell className="text-right">{txn.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0}</TableCell>
+                      <TableCell className="text-right font-semibold">${Number(txn.total).toFixed(2)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground text-sm">
+                        {formatDistance(new Date(txn.created_at), new Date(), { addSuffix: true })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Badge variant="secondary" className="text-xs capitalize">
+                          {txn.payment_status.toLowerCase()}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      No transactions yet
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>

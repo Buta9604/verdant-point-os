@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useCustomers } from "@/hooks/useCustomers";
 import {
   Table,
   TableBody,
@@ -14,59 +15,22 @@ import {
 import { Search, Plus, Star, Users, TrendingUp, Award } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-const customers = [
-  {
-    id: "CUST-001",
-    name: "John Doe",
-    email: "john.doe@email.com",
-    phone: "(555) 123-4567",
-    loyaltyPoints: 2450,
-    tier: "Gold",
-    totalSpent: 8920,
-    visits: 47,
-    lastVisit: "2024-01-22",
-    preferences: ["Indica", "Pre-Rolls"]
-  },
-  {
-    id: "CUST-002",
-    name: "Sarah Mitchell",
-    email: "sarah.m@email.com",
-    phone: "(555) 234-5678",
-    loyaltyPoints: 5680,
-    tier: "Platinum",
-    totalSpent: 15240,
-    visits: 89,
-    lastVisit: "2024-01-21",
-    preferences: ["Hybrid", "Edibles"]
-  },
-  {
-    id: "CUST-003",
-    name: "Mike Roberts",
-    email: "mike.r@email.com",
-    phone: "(555) 345-6789",
-    loyaltyPoints: 890,
-    tier: "Silver",
-    totalSpent: 2450,
-    visits: 12,
-    lastVisit: "2024-01-20",
-    preferences: ["Sativa"]
-  },
-  {
-    id: "CUST-004",
-    name: "Emma Lopez",
-    email: "emma.lopez@email.com",
-    phone: "(555) 456-7890",
-    loyaltyPoints: 3200,
-    tier: "Gold",
-    totalSpent: 9850,
-    visits: 54,
-    lastVisit: "2024-01-22",
-    preferences: ["CBD", "Tinctures"]
-  },
-];
-
 export default function Customers() {
   const [searchQuery, setSearchQuery] = useState("");
+  const { data: customersData, isLoading } = useCustomers();
+
+  const customers = customersData?.map(c => ({
+    id: c.id,
+    name: `${c.first_name} ${c.last_name}`,
+    email: c.email || 'N/A',
+    phone: c.phone || 'N/A',
+    loyaltyPoints: c.loyalty_points,
+    tier: c.loyalty_points > 5000 ? 'Platinum' : c.loyalty_points > 2000 ? 'Gold' : 'Silver',
+    totalSpent: c.total_spent,
+    visits: c.visit_count,
+    lastVisit: c.created_at,
+    preferences: [] as string[],
+  })) || [];
 
   const filteredCustomers = customers.filter((customer) => {
     return (
@@ -200,7 +164,14 @@ export default function Customers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCustomers.map((customer) => (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredCustomers.length > 0 ? (
+                  filteredCustomers.map((customer) => (
                   <TableRow key={customer.id} className="cursor-pointer hover:bg-muted/50">
                     <TableCell className="font-mono text-xs">{customer.id}</TableCell>
                     <TableCell className="font-medium">{customer.name}</TableCell>
@@ -236,7 +207,14 @@ export default function Customers() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      No customers found
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>

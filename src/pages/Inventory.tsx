@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useInventory } from "@/hooks/useInventory";
 import {
   Table,
   TableBody,
@@ -21,72 +22,23 @@ import {
 import { Search, Plus, Filter, Package, Edit, TrendingDown, TrendingUp } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-const inventory = [
-  { 
-    id: "SKU-001", 
-    name: "Northern Lights", 
-    category: "Indica", 
-    thc: 18.5, 
-    cbd: 0.2, 
-    stock: 24, 
-    price: 45.00, 
-    batch: "NL-2024-001",
-    lastRestocked: "2024-01-15",
-    supplier: "Green Valley Farms"
-  },
-  { 
-    id: "SKU-002", 
-    name: "Sour Diesel", 
-    category: "Sativa", 
-    thc: 22.0, 
-    cbd: 0.1, 
-    stock: 15, 
-    price: 52.00,
-    batch: "SD-2024-003",
-    lastRestocked: "2024-01-18",
-    supplier: "Sunset Growers"
-  },
-  { 
-    id: "SKU-003", 
-    name: "Blue Dream", 
-    category: "Hybrid", 
-    thc: 20.5, 
-    cbd: 0.3, 
-    stock: 8, 
-    price: 48.00,
-    batch: "BD-2024-002",
-    lastRestocked: "2024-01-12",
-    supplier: "Pacific Gardens"
-  },
-  { 
-    id: "SKU-004", 
-    name: "OG Kush", 
-    category: "Hybrid", 
-    thc: 24.0, 
-    cbd: 0.2, 
-    stock: 32, 
-    price: 55.00,
-    batch: "OK-2024-005",
-    lastRestocked: "2024-01-20",
-    supplier: "Green Valley Farms"
-  },
-  { 
-    id: "SKU-005", 
-    name: "Girl Scout Cookies", 
-    category: "Hybrid", 
-    thc: 21.5, 
-    cbd: 0.1, 
-    stock: 0, 
-    price: 50.00,
-    batch: "GSC-2024-001",
-    lastRestocked: "2024-01-10",
-    supplier: "Artisan Cannabis Co."
-  },
-];
-
 export default function Inventory() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const { data: inventoryData, isLoading } = useInventory();
+
+  const inventory = inventoryData?.map(item => ({
+    id: item.product?.sku || item.id,
+    name: item.product?.name || 'Unknown',
+    category: item.product?.category?.name || 'Unknown',
+    thc: Number(item.product?.thc_percentage) || 0,
+    cbd: Number(item.product?.cbd_percentage) || 0,
+    stock: item.quantity,
+    price: Number(item.product?.price) || 0,
+    batch: item.product?.batch_id || 'N/A',
+    lastRestocked: item.last_restock_date,
+    supplier: 'N/A',
+  })) || [];
 
   const filteredInventory = inventory.filter((item) => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -224,7 +176,14 @@ export default function Inventory() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredInventory.map((item) => (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={10} className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredInventory.length > 0 ? (
+                  filteredInventory.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-mono text-xs">{item.id}</TableCell>
                     <TableCell className="font-medium">{item.name}</TableCell>
@@ -254,7 +213,14 @@ export default function Inventory() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))}
+                ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                      No inventory items found
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>
