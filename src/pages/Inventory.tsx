@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useInventory } from "@/hooks/useInventory";
 import { InventoryAdjustDialog } from "@/components/InventoryAdjustDialog";
+import { ProductFormDialog } from "@/components/ProductFormDialog";
 import {
   Table,
   TableBody,
@@ -28,6 +29,7 @@ export default function Inventory() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
+  const [addProductDialogOpen, setAddProductDialogOpen] = useState(false);
   const { data: inventoryData, isLoading } = useInventory();
 
   const handleEditClick = (item: any) => {
@@ -72,7 +74,7 @@ export default function Inventory() {
             </div>
             <div className="flex items-center gap-3">
               <ThemeToggle />
-              <Button className="gap-2">
+              <Button className="gap-2" onClick={() => setAddProductDialogOpen(true)}>
                 <Plus className="w-4 h-4" />
                 Add Product
               </Button>
@@ -249,6 +251,11 @@ export default function Inventory() {
         open={adjustDialogOpen}
         onOpenChange={setAdjustDialogOpen}
         item={selectedItem}
+      />
+      
+      <ProductFormDialog
+        open={addProductDialogOpen}
+        onOpenChange={setAddProductDialogOpen}
       />
     </div>
   );
