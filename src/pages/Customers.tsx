@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCustomers } from "@/hooks/useCustomers";
+import { CustomerFormDialog } from "@/components/CustomerFormDialog";
 import {
   Table,
   TableBody,
@@ -12,12 +13,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Plus, Star, Users, TrendingUp, Award } from "lucide-react";
+import { Search, Plus, Star, Users, TrendingUp, Award, Edit } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function Customers() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const { data: customersData, isLoading } = useCustomers();
+
+  const handleAddCustomer = () => {
+    setSelectedCustomer(null);
+    setDialogOpen(true);
+  };
+
+  const handleEditCustomer = (customer: any) => {
+    const fullCustomer = customersData?.find(c => c.id === customer.id);
+    setSelectedCustomer(fullCustomer);
+    setDialogOpen(true);
+  };
 
   const customers = customersData?.map(c => ({
     id: c.id,
@@ -65,7 +79,7 @@ export default function Customers() {
             </div>
             <div className="flex items-center gap-3">
               <ThemeToggle />
-              <Button className="gap-2">
+              <Button className="gap-2" onClick={handleAddCustomer}>
                 <Plus className="w-4 h-4" />
                 Add Customer
               </Button>
@@ -161,6 +175,7 @@ export default function Customers() {
                   <TableHead className="text-right">Visits</TableHead>
                   <TableHead>Last Visit</TableHead>
                   <TableHead>Preferences</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -172,7 +187,7 @@ export default function Customers() {
                   </TableRow>
                 ) : filteredCustomers.length > 0 ? (
                   filteredCustomers.map((customer) => (
-                  <TableRow key={customer.id} className="cursor-pointer hover:bg-muted/50">
+                  <TableRow key={customer.id} className="hover:bg-muted/50">
                     <TableCell className="font-mono text-xs">{customer.id}</TableCell>
                     <TableCell className="font-medium">{customer.name}</TableCell>
                     <TableCell>
@@ -206,11 +221,21 @@ export default function Customers() {
                         ))}
                       </div>
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => handleEditCustomer(customer)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                       No customers found
                     </TableCell>
                   </TableRow>
@@ -220,6 +245,12 @@ export default function Customers() {
           </CardContent>
         </Card>
       </div>
+
+      <CustomerFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        customer={selectedCustomer}
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useInventory } from "@/hooks/useInventory";
+import { InventoryAdjustDialog } from "@/components/InventoryAdjustDialog";
 import {
   Table,
   TableBody,
@@ -25,10 +26,18 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 export default function Inventory() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
   const { data: inventoryData, isLoading } = useInventory();
+
+  const handleEditClick = (item: any) => {
+    setSelectedItem(item);
+    setAdjustDialogOpen(true);
+  };
 
   const inventory = inventoryData?.map(item => ({
     id: item.product?.sku || item.id,
+    inventoryId: item.id,
     name: item.product?.name || 'Unknown',
     category: item.product?.category?.name || 'Unknown',
     thc: Number(item.product?.thc_percentage) || 0,
@@ -208,7 +217,16 @@ export default function Inventory() {
                     <TableCell className="font-mono text-xs">{item.batch}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{item.supplier}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => handleEditClick({ 
+                          id: item.inventoryId, 
+                          product: { name: item.name }, 
+                          quantity: item.stock 
+                        })}
+                      >
                         <Edit className="w-4 h-4" />
                       </Button>
                     </TableCell>
@@ -226,6 +244,12 @@ export default function Inventory() {
           </CardContent>
         </Card>
       </div>
+
+      <InventoryAdjustDialog
+        open={adjustDialogOpen}
+        onOpenChange={setAdjustDialogOpen}
+        item={selectedItem}
+      />
     </div>
   );
 }
