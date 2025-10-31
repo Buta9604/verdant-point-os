@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { AuthProvider } from "./contexts/AuthContext";
+import { RoleProvider } from "./contexts/RoleContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Auth from "./pages/Auth";
 import Index from "./pages/Index";
@@ -28,7 +29,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
+          <RoleProvider>
+            <Routes>
           <Route path="/login" element={<POSLogin />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/security" element={<ProtectedRoute><SecurityCheckIn /></ProtectedRoute>} />
@@ -42,7 +44,8 @@ const App = () => (
           <Route path="/receipt" element={<ProtectedRoute><POSReceipt /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
-        </Routes>
+            </Routes>
+          </RoleProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

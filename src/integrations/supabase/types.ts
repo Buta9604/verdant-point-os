@@ -807,9 +807,15 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_manager_or_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_security: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "ADMIN" | "MANAGER" | "BUDTENDER" | "INVENTORY_CLERK"
+      app_role:
+        | "ADMIN"
+        | "MANAGER"
+        | "BUDTENDER"
+        | "INVENTORY_CLERK"
+        | "SECURITY"
       compliance_event_type:
         | "SALE"
         | "RETURN"
@@ -969,7 +975,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["ADMIN", "MANAGER", "BUDTENDER", "INVENTORY_CLERK"],
+      app_role: [
+        "ADMIN",
+        "MANAGER",
+        "BUDTENDER",
+        "INVENTORY_CLERK",
+        "SECURITY",
+      ],
       compliance_event_type: [
         "SALE",
         "RETURN",

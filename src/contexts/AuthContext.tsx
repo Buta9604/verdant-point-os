@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, firstName: string, lastName: string, role?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   loading: boolean;
 }
@@ -43,23 +43,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error, data } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     
-    if (!error) {
-      toast({
-        title: "Welcome back!",
-        description: "Successfully signed in",
-      });
-      navigate('/');
+    if (!error && data.user) {
+      // Check user role and route accordingly
+      setTimeout(async () => {
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id);
+        
+        const userRoles = roles?.map(r => r.role) || [];
+        
+        if (userRoles.includes('SECURITY')) {
+          navigate('/security');
+        } else {
+          navigate('/');
+        }
+        
+        toast({
+          title: "Welcome back!",
+          description: "Successfully signed in",
+        });
+      }, 0);
     }
     
     return { error };
   };
 
-  const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
+  const signUp = async (
+    email: string, 
+    password: string, 
+    firstName: string, 
+    lastName: string,
+    role: string = 'BUDTENDER'
+  ) => {
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
@@ -70,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: {
           first_name: firstName,
           last_name: lastName,
+          role: role,
         }
       }
     });
@@ -77,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!error) {
       toast({
         title: "Account created!",
-        description: "You can now sign in",
+        description: "You can now sign in with your new account",
       });
     }
     

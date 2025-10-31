@@ -5,7 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Store } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Store, Shield } from "lucide-react";
 import { z } from "zod";
 
 const signInSchema = z.object({
@@ -34,6 +35,7 @@ export default function Auth() {
     confirmPassword: "",
     firstName: "",
     lastName: "",
+    role: "BUDTENDER",
   });
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -75,7 +77,8 @@ export default function Auth() {
       signUpData.email,
       signUpData.password,
       signUpData.firstName,
-      signUpData.lastName
+      signUpData.lastName,
+      signUpData.role
     );
     if (error) setErrors({ submit: error.message });
     setLoading(false);
@@ -204,6 +207,37 @@ export default function Auth() {
                     className={errors.confirmPassword ? "border-destructive" : ""}
                   />
                   {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-role">Role</Label>
+                  <Select
+                    value={signUpData.role}
+                    onValueChange={(value) => setSignUpData({ ...signUpData, role: value })}
+                  >
+                    <SelectTrigger id="signup-role">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BUDTENDER">
+                        <div className="flex items-center gap-2">
+                          <Store className="h-4 w-4" />
+                          <span>Budtender (POS Terminal)</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="SECURITY">
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4" />
+                          <span>Security (ID Check-in)</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {signUpData.role === 'SECURITY' 
+                      ? 'Security staff check IDs and manage customer queue' 
+                      : 'Budtenders serve customers and process sales'}
+                  </p>
                 </div>
 
                 {errors.submit && (
