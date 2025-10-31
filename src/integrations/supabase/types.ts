@@ -202,6 +202,50 @@ export type Database = {
           },
         ]
       }
+      customer_queue: {
+        Row: {
+          checked_in_at: string | null
+          checked_in_by: string | null
+          created_at: string | null
+          customer_id: string
+          id: string
+          notes: string | null
+          position: number | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          checked_in_at?: string | null
+          checked_in_by?: string | null
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          notes?: string | null
+          position?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          checked_in_at?: string | null
+          checked_in_by?: string | null
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          notes?: string | null
+          position?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_queue_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           created_at: string | null

@@ -78,7 +78,7 @@ export function LiveQueue({ orders, isLoading = false, onSelectOrder, className 
                         </div>
                       </div>
                       <Badge className={cn("rounded-full px-2.5 py-1 text-xs", statusTone)}>
-                        {status.replaceAll("_", " ")}
+                        {status.replace(/_/g, " ")}
                       </Badge>
                     </div>
                     <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">

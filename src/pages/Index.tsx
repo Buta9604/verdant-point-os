@@ -4,19 +4,17 @@ import { ProductCard } from "@/components/ProductCard";
 import { CartDrawer } from "@/components/CartDrawer";
 import { POSHeader } from "@/components/POSHeader";
 import { ShiftOverview } from "@/components/pos/ShiftOverview";
-import { LiveQueue } from "@/components/pos/LiveQueue";
-import { LoyaltyPanel } from "@/components/pos/LoyaltyPanel";
+import { CustomerQueuePanel } from "@/components/pos/CustomerQueuePanel";
+import { CustomerInsights } from "@/components/pos/CustomerInsights";
 import { CartPanel } from "@/components/pos/CartPanel";
 import { SmartAssistant } from "@/components/pos/SmartAssistant";
 import { ProductFilters } from "@/components/pos/ProductFilters";
 import { CommandMenu } from "@/components/CommandMenu";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useProducts";
-import { useDashboardStats, useRecentTransactions } from "@/hooks/useAnalytics";
-import { useCustomers } from "@/hooks/useCustomers";
-import type { QueueOrder } from "@/components/pos/LiveQueue";
-import type { LoyaltyCustomer } from "@/components/pos/LoyaltyPanel";
+import { useDashboardStats } from "@/hooks/useAnalytics";
 import type { CartLineItem } from "@/components/pos/CartPanel";
+import type { QueueEntry } from "@/hooks/useQueue";
 
 type StockFilter = "all" | "in-stock" | "low";
 
@@ -42,7 +40,7 @@ const Index = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [commandOpen, setCommandOpen] = useState(false);
   const [isExpressCheckout, setIsExpressCheckout] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<LoyaltyCustomer | null>(null);
+  const [selectedQueueEntry, setSelectedQueueEntry] = useState<QueueEntry | null>(null);
   const stores = useMemo(
     () => [
       { id: "oakland", name: "Oakland Flagship", status: "Open until 10 PM" },
@@ -56,15 +54,7 @@ const Index = () => {
   const { toast } = useToast();
   const { data: products, isLoading } = useProducts();
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
-  const { data: recentTransactions, isLoading: transactionsLoading } = useRecentTransactions(12);
-  const { data: customers } = useCustomers();
   const searchInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    if (customers && customers.length > 0) {
-      setSelectedCustomer((prev) => prev ?? customers[0]);
-    }
-  }, [customers]);
 
   const categories = useMemo(
     () =>
@@ -149,24 +139,13 @@ const Index = () => {
     return sorted;
   }, [mappedProducts, searchQuery, selectedCategory, priceRange, potencyRange, stockFilter, selectedTags, sortOption]);
 
-  const queueOrders: QueueOrder[] = useMemo(
-    () =>
-      recentTransactions?.map((txn) => ({
-        id: txn.id,
-        customerName: txn.customer ? `${txn.customer.first_name} ${txn.customer.last_name}` : "Guest",
-        createdAt: txn.created_at,
-        status: txn.payment_status,
-        total: Number(txn.total) || 0,
-        items: txn.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
-        etaMinutes: Math.max(2, Math.min(12, Math.round(Math.random() * 10))),
-      })) || [],
-    [recentTransactions],
-  );
-
-  const liveQueueDepth = useMemo(
-    () => queueOrders.filter((order) => order.status?.toUpperCase() !== "COMPLETED").length,
-    [queueOrders],
-  );
+  const handleSelectCustomer = (queueEntry: QueueEntry) => {
+    setSelectedQueueEntry(queueEntry);
+    toast({
+      title: "Customer selected",
+      description: `Now serving ${queueEntry.customers.first_name} ${queueEntry.customers.last_name}`,
+    });
+  };
 
   const handleAddToCart = (productId: string) => {
     const product = mappedProducts.find((p) => p.id === productId);
@@ -267,24 +246,6 @@ const Index = () => {
     }
   };
 
-  const handleSwapCustomer = () => {
-    if (!customers || customers.length === 0) return;
-    if (!selectedCustomer) {
-      setSelectedCustomer(customers[0]);
-      return;
-    }
-    const currentIndex = customers.findIndex((cust) => cust.id === selectedCustomer.id);
-    const nextIndex = (currentIndex + 1) % customers.length;
-    setSelectedCustomer(customers[nextIndex]);
-  };
-
-  const handleEngageLoyalty = (customerId: string) => {
-    toast({
-      title: "Loyalty reward queued",
-      description: `Applied VIP perk for customer #${customerId}`,
-    });
-  };
-
   const handleCreateSale = () => {
     setCartItems([]);
     setIsExpressCheckout(false);
@@ -339,7 +300,7 @@ const Index = () => {
         onStoreChange={handleStoreChange}
         onOpenCommand={() => setCommandOpen(true)}
         onNewSale={handleCreateSale}
-        queueDepth={liveQueueDepth}
+        queueDepth={0}
       />
 
       <CommandMenu
@@ -360,7 +321,10 @@ const Index = () => {
               timeWindowLabel={`Today • ${activeStore?.name ?? "Primary"}`}
               shiftLead="Avery Johnson"
             />
-            <LiveQueue orders={queueOrders} isLoading={transactionsLoading} />
+            <CustomerQueuePanel 
+              onSelectCustomer={handleSelectCustomer}
+              selectedCustomerId={selectedQueueEntry?.id}
+            />
           </div>
 
           <div className="flex flex-col gap-6">
@@ -425,11 +389,15 @@ const Index = () => {
                 onToggleExpress={setIsExpressCheckout}
               />
             </div>
-            <LoyaltyPanel
-              customer={selectedCustomer}
-              onEngage={handleEngageLoyalty}
-              onSwapCustomer={handleSwapCustomer}
-            />
+            {selectedQueueEntry ? (
+              <CustomerInsights customerId={selectedQueueEntry.customer_id} />
+            ) : (
+              <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Select a customer from the queue to view insights
+                </p>
+              </div>
+            )}
             <SmartAssistant
               cartItems={cartItems}
               productCatalog={mappedProducts}

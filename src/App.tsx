@@ -16,6 +16,7 @@ import Settings from "./pages/Settings";
 import POSLogin from "./pages/POSLogin";
 import POSCheckout from "./pages/POSCheckout";
 import POSReceipt from "./pages/POSReceipt";
+import SecurityCheckIn from "./pages/SecurityCheckIn";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Routes>
           <Route path="/login" element={<POSLogin />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/security" element={<ProtectedRoute><SecurityCheckIn /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/inventory" element={<ProtectedRoute><AppLayout><Inventory /></AppLayout></ProtectedRoute>} />
