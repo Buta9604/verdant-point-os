@@ -37,28 +37,23 @@ export function SettingsTab() {
               onChange={(e) => session.setTerminal(session.terminalId, e.target.value)}
             />
           </label>
-          <label className="flex flex-col gap-1 text-xs text-slate-400">
+          <div className="flex flex-col gap-1 text-xs text-slate-400">
             Signed-in user
-            <input
-              className="inp"
-              value={session.userName}
-              onChange={(e) => session.setUser(e.target.value, session.role)}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-slate-400">
-            Role (controls permissions)
-            <select
-              className="inp"
-              value={session.role}
-              onChange={(e) => session.setUser(session.userName, e.target.value as Role)}
-            >
-              {ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {ROLE_LABEL[r]}
-                </option>
-              ))}
-            </select>
-          </label>
+            <div className="inp flex items-center justify-between">
+              <span className="text-slate-100">
+                {session.currentUser?.name}
+                <span className="ml-2 text-slate-500">
+                  {session.currentUser ? ROLE_LABEL[session.currentUser.role] : ""}
+                </span>
+              </span>
+              <button
+                onClick={session.logout}
+                className="rounded-md border border-surface-border px-2 py-0.5 text-xs text-slate-300 hover:text-slate-100"
+              >
+                Lock / switch
+              </button>
+            </div>
+          </div>
           <label className="flex flex-col gap-1 text-xs text-slate-400">
             Connection
             <button

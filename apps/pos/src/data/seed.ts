@@ -1,4 +1,15 @@
-import type { Customer } from "./types";
+import type { Customer, User } from "./types";
+
+// Staff accounts. Each budtender signs in with their own PIN so every sale is
+// attributed to them for performance reporting. Backend-owned in production.
+export const SEED_USERS: User[] = [
+  { id: "u-jordan", name: "Jordan Lee", pin: "1111", role: "budtender", active: true },
+  { id: "u-mia", name: "Mia Chen", pin: "2222", role: "budtender", active: true },
+  { id: "u-diego", name: "Diego Santos", pin: "3333", role: "budtender", active: true },
+  { id: "u-pat", name: "Pat Morgan", pin: "9999", role: "manager", active: true },
+  { id: "u-sam", name: "Sam Doyle", pin: "4444", role: "security", active: true },
+  { id: "u-riley", name: "Riley Fox", pin: "5555", role: "fulfillment", active: true },
+];
 
 export interface Product {
   id: string;

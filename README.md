@@ -28,8 +28,14 @@ live sync via BroadcastChannel; the real backend arrives in Phase 2/11):
 - **Settings**: per-terminal identity + printer routing, rounding config, and the
   backend-synced **role-permission matrix**.
 
+Plus: **per-budtender PIN login** (every sale attributed for **performance reports**),
+an **upsell recommendation engine** to lift basket size, **loyalty** earn/redeem at
+tender, and a real **Invoices** ledger with reprint + permissioned refunds. See
+[`docs/PHASE1_FEATURES.md`](docs/PHASE1_FEATURES.md) for the full status and gap analysis.
+
 Each browser window is its own terminal — open two windows (e.g. one as Budtender on
-*Terminal 3*, one as Fulfillment) to watch the live sync.
+*Terminal 3*, one as Fulfillment) to watch the live sync. **Demo PINs:** Jordan 1111,
+Mia 2222, Diego 3333, Pat (manager) 9999, Sam (security) 4444, Riley (fulfillment) 5555.
 
 Earlier phases (offline outbox/PWA, real PDF417 hardware, backend + METRC) are
 detailed in the design plan.

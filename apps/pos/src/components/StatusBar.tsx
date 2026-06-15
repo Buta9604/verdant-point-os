@@ -1,8 +1,9 @@
 import { roleLabel, useSession } from "../app/store";
 
 export function StatusBar() {
-  const { storeName, terminalName, userName, role, online, activeCustomer } =
+  const { storeName, terminalName, currentUser, online, activeCustomer, logout } =
     useSession();
+  const userName = currentUser?.name ?? "—";
   const initials = userName
     .split(" ")
     .map((p) => p[0])
@@ -42,8 +43,17 @@ export function StatusBar() {
         </div>
         <div className="hidden leading-tight sm:block">
           <div className="text-sm text-slate-200">{userName}</div>
-          <div className="text-xs text-slate-500">{roleLabel(role)}</div>
+          <div className="text-xs text-slate-500">
+            {currentUser ? roleLabel(currentUser.role) : ""}
+          </div>
         </div>
+        <button
+          onClick={logout}
+          className="ml-1 rounded-lg border border-surface-border px-2 py-1 text-xs text-slate-400 hover:text-slate-100"
+          title="Lock / switch user"
+        >
+          Lock
+        </button>
       </div>
     </header>
   );

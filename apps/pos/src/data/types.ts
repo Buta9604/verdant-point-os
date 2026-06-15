@@ -1,4 +1,13 @@
 // Domain types for the dispensary workflow.
+import type { Role } from "../app/permissions";
+
+export interface User {
+  id: string;
+  name: string;
+  pin: string; // 4-digit; backend-owned in production
+  role: Role;
+  active: boolean;
+}
 
 export type CustomerType = "recreational" | "medical";
 
@@ -37,6 +46,7 @@ export type OrderStatus =
   | "in_progress"
   | "ready"
   | "completed"
+  | "refunded"
   | "voided";
 
 export interface OrderLine {
@@ -55,6 +65,7 @@ export interface Order {
   customerName: string;
   terminalId: string;
   terminalName: string;
+  budtenderId: string;
   budtenderName: string;
   lines: OrderLine[];
   status: OrderStatus;
@@ -62,6 +73,7 @@ export interface Order {
   sentAt: number;
   readyAt: number | null;
   completedAt: number | null;
+  refundedAt: number | null;
   subtotal: number;
   discountPct: number;
   discountAmount: number;
@@ -69,6 +81,9 @@ export interface Order {
   salesTax: number;
   total: number;
   roundedTotal: number;
+  pointsRedeemed: number;
+  redeemValue: number;
+  pointsEarned: number;
   paymentMethod?: "cash" | "card" | "debit";
   acknowledgedByBudtender: boolean; // cleared until budtender sees the "ready" signal
 }

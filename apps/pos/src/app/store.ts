@@ -23,14 +23,19 @@ export interface PrinterAssignments {
   label: string;
 }
 
+export interface CurrentUser {
+  id: string;
+  name: string;
+  role: Role;
+}
+
 interface SessionState {
   storeName: string;
-  // Per-terminal identity. Each POS logs in as a specific terminal + user; the
-  // terminal name (e.g. "Terminal 3") is printed on the fulfillment pick ticket.
+  // Per-terminal identity. The terminal name (e.g. "Terminal 3") is printed on
+  // the fulfillment pick ticket; each budtender signs in on top of it with a PIN.
   terminalId: string;
   terminalName: string;
-  userName: string;
-  role: Role;
+  currentUser: CurrentUser | null;
   printers: PrinterAssignments;
   online: boolean;
   activeCustomer: ActiveCustomer | null;
@@ -38,7 +43,8 @@ interface SessionState {
   setOnline: (online: boolean) => void;
   attachCustomer: (c: ActiveCustomer | null) => void;
   setTerminal: (terminalId: string, terminalName: string) => void;
-  setUser: (userName: string, role: Role) => void;
+  login: (user: CurrentUser) => void;
+  logout: () => void;
   setPrinter: (slot: keyof PrinterAssignments, printer: string) => void;
 }
 
@@ -46,8 +52,7 @@ export const useSession = create<SessionState>((set) => ({
   storeName: "Verdant Point — Albany",
   terminalId: "T3",
   terminalName: "Terminal 3",
-  userName: "Jordan Lee",
-  role: "budtender",
+  currentUser: null,
   printers: {
     receipt: "Front Receipt Printer",
     pickTicket: "Fulfillment Pick-Ticket Printer",
@@ -59,7 +64,8 @@ export const useSession = create<SessionState>((set) => ({
   setOnline: (online) => set({ online }),
   attachCustomer: (activeCustomer) => set({ activeCustomer }),
   setTerminal: (terminalId, terminalName) => set({ terminalId, terminalName }),
-  setUser: (userName, role) => set({ userName, role }),
+  login: (currentUser) => set({ currentUser }),
+  logout: () => set({ currentUser: null, activeCustomer: null }),
   setPrinter: (slot, printer) =>
     set((s) => ({ printers: { ...s.printers, [slot]: printer } })),
 }));
@@ -70,6 +76,6 @@ export function roleLabel(role: Role): string {
 
 /** Effective permissions for the current user, sourced from backend-synced config. */
 export function usePermissions(): Permissions {
-  const role = useSession((s) => s.role);
+  const role = useSession((s) => s.currentUser?.role ?? "budtender");
   return useData((d) => d.rolePermissions[role]);
 }

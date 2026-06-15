@@ -8,9 +8,14 @@ import {
 } from "../data/ocm";
 import { computeTotals } from "../lib/pricing";
 import { searchCustomers } from "../lib/customers";
+import { recommend } from "../lib/recommend";
 import { printPickTicket, printReceipt } from "../lib/print";
 import { ageFromDob, SAMPLE_SCANS } from "../data/license";
-import { useData } from "../stores/data";
+import {
+  useData,
+  REDEEM_BLOCK,
+  REDEEM_BLOCK_VALUE,
+} from "../stores/data";
 import { useSession, usePermissions } from "../app/store";
 import { useToasts } from "../stores/toast";
 import type { Customer, Order, OrderLine } from "../data/types";
@@ -78,13 +83,14 @@ export function SalesTab() {
   }
 
   function sendToFulfillment() {
-    if (!customer || cart.length === 0) return;
+    if (!customer || cart.length === 0 || !session.currentUser) return;
     const order = createOrder({
       customerId: customer.id,
       customerName: `${customer.firstName} ${customer.lastName}`,
       terminalId: session.terminalId,
       terminalName: session.terminalName,
-      budtenderName: session.userName,
+      budtenderId: session.currentUser.id,
+      budtenderName: session.currentUser.name,
       lines: cart.map(({ strain: _strain, ...l }) => l),
       discountPct,
     });
@@ -124,6 +130,10 @@ export function SalesTab() {
           onClear={() => session.attachCustomer(null)}
           customers={customers}
         />
+
+        {customer && (
+          <RecommendationStrip recs={recommend(cart, customer, orders)} onAdd={addToCart} />
+        )}
 
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map((c) => (
@@ -278,6 +288,40 @@ function CustomerAttach({
   );
 }
 
+function RecommendationStrip({
+  recs,
+  onAdd,
+}: {
+  recs: ReturnType<typeof recommend>;
+  onAdd: (p: Product) => void;
+}) {
+  if (recs.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-verdant-500/30 bg-verdant-600/5 px-3 py-2">
+      <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-verdant-300">
+        ✦ Recommended add-ons
+      </div>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {recs.map(({ product, reason }) => (
+          <button
+            key={product.id}
+            onClick={() => onAdd(product)}
+            className="flex shrink-0 items-center gap-2 rounded-lg border border-surface-border bg-surface px-3 py-1.5 text-left hover:border-verdant-500"
+          >
+            <span className="text-lg leading-none text-verdant-400">+</span>
+            <span>
+              <span className="block text-sm text-slate-100">{product.name}</span>
+              <span className="block text-xs text-slate-500">
+                {reason} · ${product.price}
+              </span>
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MeterBar({ meter, used }: { meter: Exclude<Meter, "none">; used: number }) {
   const limit = METER_LIMITS[meter];
   const pct = Math.min(100, (used / limit) * 100);
@@ -404,10 +448,12 @@ function PendingStrip({ orders }: { orders: Order[] }) {
 }
 
 function PendingCard({ order }: { order: Order }) {
-  const { completeOrder } = useData();
+  const completeOrder = useData((d) => d.completeOrder);
+  const customer = useData((d) => d.customers.find((c) => c.id === order.customerId));
   const printers = useSession((s) => s.printers);
   const push = useToasts((t) => t.push);
   const [tendering, setTendering] = useState(false);
+  const [redeem, setRedeem] = useState(false);
 
   const statusLabel: Record<string, { text: string; cls: string }> = {
     sent_to_fulfillment: { text: "Sent", cls: "bg-sky-600/20 text-sky-200" },
@@ -416,22 +462,31 @@ function PendingCard({ order }: { order: Order }) {
   };
   const s = statusLabel[order.status];
 
+  const canRedeem = (customer?.loyaltyPoints ?? 0) >= REDEEM_BLOCK;
+  const redeemPoints = redeem && canRedeem ? REDEEM_BLOCK : 0;
+  const dueNow = Math.max(0, order.total - (redeemPoints / REDEEM_BLOCK) * REDEEM_BLOCK_VALUE);
+
   function tender(method: Order["paymentMethod"]) {
-    completeOrder(order.id, method);
+    completeOrder(order.id, method, redeemPoints);
     const updated = useData.getState().orders.find((o) => o.id === order.id);
     if (updated) printReceipt(updated, printers.receipt);
-    push(`Order #${order.number} tendered (${method}) · receipt printed`, "success");
+    push(
+      `Order #${order.number} tendered (${method}) · ${updated?.pointsEarned ?? 0} pts earned · receipt printed`,
+      "success",
+    );
     setTendering(false);
   }
 
   return (
-    <div className="w-56 shrink-0 rounded-xl border border-surface-border bg-surface p-3">
+    <div className="w-60 shrink-0 rounded-xl border border-surface-border bg-surface p-3">
       <div className="flex items-center justify-between">
         <span className="font-semibold text-slate-100">#{order.number}</span>
         <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${s.cls}`}>{s.text}</span>
       </div>
       <div className="mt-0.5 truncate text-xs text-slate-500">{order.customerName}</div>
-      <div className="mt-2 text-sm text-slate-300">{order.lines.length} items · ${order.total.toFixed(2)}</div>
+      <div className="mt-2 text-sm text-slate-300">
+        {order.lines.length} items · ${order.total.toFixed(2)}
+      </div>
 
       {order.status === "ready" && !tendering && (
         <button onClick={() => setTendering(true)} className="btn-primary mt-2 w-full py-1.5 text-sm">
@@ -439,10 +494,19 @@ function PendingCard({ order }: { order: Order }) {
         </button>
       )}
       {tendering && (
-        <div className="mt-2 space-y-1">
+        <div className="mt-2 space-y-2">
+          {canRedeem && (
+            <label className="flex items-center gap-2 text-xs text-verdant-200">
+              <input
+                type="checkbox"
+                checked={redeem}
+                onChange={(e) => setRedeem(e.target.checked)}
+              />
+              Redeem {REDEEM_BLOCK} pts (−${REDEEM_BLOCK_VALUE})
+            </label>
+          )}
           <p className="text-xs text-slate-400">
-            Total ${order.total.toFixed(2)}
-            {/* rounded cash total computed at completion */}
+            Due now <span className="font-semibold text-slate-200">${dueNow.toFixed(2)}</span>
           </p>
           <div className="grid grid-cols-3 gap-1">
             {(["cash", "card", "debit"] as const).map((m) => (
