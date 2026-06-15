@@ -6,9 +6,11 @@ export interface TabDef {
 }
 
 export const TABS: TabDef[] = [
+  { path: "/gate", label: "Gate", icon: "🛂", group: "primary" },
   { path: "/sales", label: "Sales", icon: "🛒", group: "primary" },
   { path: "/customers", label: "Customers", icon: "👤", group: "primary" },
   { path: "/queue", label: "Queue", icon: "⏳", group: "primary" },
+  { path: "/fulfillment", label: "Fulfill", icon: "🎒", group: "primary" },
   { path: "/orders", label: "Orders", icon: "📦", group: "primary" },
   { path: "/invoices", label: "Invoices", icon: "🧾", group: "primary" },
   { path: "/inventory", label: "Inventory", icon: "📊", group: "support" },

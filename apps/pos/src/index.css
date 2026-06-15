@@ -31,4 +31,7 @@
   .btn-primary {
     @apply rounded-xl bg-verdant-500 px-5 py-3 font-semibold text-surface transition-colors hover:bg-verdant-400 disabled:opacity-40;
   }
+  .inp {
+    @apply rounded-lg border border-surface-border bg-surface px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-verdant-500 focus:outline-none disabled:opacity-40;
+  }
 }

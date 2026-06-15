@@ -1,15 +1,21 @@
-import { useSession } from "../app/store";
+import { roleLabel, useSession } from "../app/store";
 
 export function StatusBar() {
-  const { storeName, registerId, budtender, online, pendingSync, activeCustomer } =
+  const { storeName, terminalName, userName, role, online, activeCustomer } =
     useSession();
+  const initials = userName
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-4 border-b border-surface-border bg-surface-raised px-4">
       <div className="flex items-center gap-2">
         <span className="text-lg font-bold text-verdant-400">Verdant Point</span>
-        <span className="text-xs text-slate-500">
-          {storeName} · {registerId}
+        <span className="hidden text-xs text-slate-500 lg:block">
+          {storeName} · {terminalName}
         </span>
       </div>
 
@@ -28,19 +34,22 @@ export function StatusBar() {
         </div>
       )}
 
-      <ConnectionPill online={online} pending={pendingSync} />
+      <ConnectionPill online={online} />
 
       <div className="flex items-center gap-2">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-verdant-600 text-sm font-semibold text-surface">
-          {budtender.initials}
+          {initials}
         </div>
-        <span className="hidden text-sm text-slate-300 sm:block">{budtender.name}</span>
+        <div className="hidden leading-tight sm:block">
+          <div className="text-sm text-slate-200">{userName}</div>
+          <div className="text-xs text-slate-500">{roleLabel(role)}</div>
+        </div>
       </div>
     </header>
   );
 }
 
-function ConnectionPill({ online, pending }: { online: boolean; pending: number }) {
+function ConnectionPill({ online }: { online: boolean }) {
   return (
     <div
       className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs ${
@@ -51,7 +60,6 @@ function ConnectionPill({ online, pending }: { online: boolean; pending: number 
         className={`h-2 w-2 rounded-full ${online ? "bg-verdant-400" : "bg-amber-400"}`}
       />
       {online ? "Online" : "Offline"}
-      {pending > 0 && <span className="opacity-70">· {pending} queued</span>}
     </div>
   );
 }
